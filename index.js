@@ -34,6 +34,7 @@ async function run() {
     await client.connect();
     const coffeelistDB = client.db("coffeelistDB");
     const coffeesCollection = coffeelistDB.collection("coffees");
+    const usersCollection = coffeelistDB.collection("users");
 
     // GET all coffees
     app.get("/coffees", async (req, res) => {
@@ -41,6 +42,14 @@ async function run() {
       res.send(result);
     });
 
+    // send the user data to database
+    app.post('/newUser',async(req,res)=>{
+      const newUser=req.body;
+      const result=await usersCollection.insertOne(newUser);
+      res.send(result);
+
+      console.log(newUser);
+    })
     // coffee details route
     app.get("/coffee/:id", async (req, res) => {
       const id = req.params.id;
