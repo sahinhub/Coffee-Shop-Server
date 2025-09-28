@@ -3,13 +3,13 @@ const cors = require("cors");
 require("dotenv").config();
 const { ObjectId } = require("mongodb");
 const serverless = require("serverless-http");
-const clientPromise = require("../lib/mongo");
+const clientPromise = require("./lib/mongo");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// default route
+// Default route
 app.get("/", (req, res) => {
   res.json({ message: "Coffee shop server is running!" });
 });
@@ -147,6 +147,14 @@ app.patch("/user/login", async (req, res) => {
     res.status(500).json({ error: "Failed to update login" });
   }
 });
+
+// Local development server
+if (process.env.NODE_ENV !== "production") {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
 
 // Export for Vercel
 module.exports = serverless(app);
