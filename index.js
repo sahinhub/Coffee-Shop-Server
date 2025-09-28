@@ -1,161 +1,118 @@
 const express = require("express");
+const serverless = require("serverless-http");
 const cors = require("cors");
 require("dotenv").config();
-const { ObjectId } = require("mongodb");
-const serverless = require("serverless-http");
-const clientPromise = require("./lib/mongo");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
+
+// middleware
 app.use(cors());
 app.use(express.json());
 
-// Default route
+// default route
 app.get("/", (req, res) => {
-  res.json({ message: "Coffee shop server is running!" });
+  res.send("Coffee shop server");
 });
 
-// GET all coffees
-app.get("/coffees", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const coffeesCollection = client.db("coffeelistDB").collection("coffees");
-    const result = await coffeesCollection.find().toArray();
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch coffees" });
-  }
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@coffeelist.oikmndh.mongodb.net/?retryWrites=true&w=majority&appName=CoffeeList`;
+
+// MongoDB setup
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
-// GET coffee details by ID
-app.get("/coffee/:id", async (req, res) => {
+async function run() {
   try {
-    const client = await clientPromise;
-    const coffeesCollection = client.db("coffeelistDB").collection("coffees");
-    const result = await coffeesCollection.findOne({ _id: new ObjectId(req.params.id) });
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch coffee" });
-  }
-});
+    await client.connect();
+    const coffeelistDB = client.db("coffeelistDB");
+    const coffeesCollection = coffeelistDB.collection("coffees");
+    const usersCollection = coffeelistDB.collection("users");
 
-// POST new coffee
-app.post("/coffees", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const coffeesCollection = client.db("coffeelistDB").collection("coffees");
-    const result = await coffeesCollection.insertOne(req.body);
-    res.json(result);
-    console.log("New Coffee Added:", req.body);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to add coffee" });
-  }
-});
+    // --- Routes ---
+    app.get("/coffees", async (req, res) => {
+      const result = await coffeesCollection.find().toArray();
+      res.send(result);
+    });
 
-// UPDATE coffee
-app.put("/coffee/update/:id", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const coffeesCollection = client.db("coffeelistDB").collection("coffees");
-    const updatedCoffee = req.body;
-    const result = await coffeesCollection.updateOne(
-      { _id: new ObjectId(req.params.id) },
-      {
+    app.post("/newUser", async (req, res) => {
+      const newUser = req.body;
+      const result = await usersCollection.insertOne(newUser);
+      res.send(result);
+    });
+
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.delete("/delete/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/user/login", async (req, res) => {
+      const userInfo = req.body;
+      const filter = { email: userInfo.email };
+      const updatedInfo = {
+        $set: {
+          userLastSignIn: userInfo.userLastSignIn,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updatedInfo);
+      res.send(result);
+    });
+
+    app.get("/coffee/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const cursor = await coffeesCollection.findOne(query);
+      res.send(cursor);
+    });
+
+    app.put("/coffee/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedCoffee = req.body;
+      const doc = {
         $set: {
           name: updatedCoffee.name,
           chef: updatedCoffee.chef,
           supplier: updatedCoffee.supplier,
           price: updatedCoffee.price,
         },
-      }
-    );
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update coffee" });
-  }
-});
+      };
+      const result = await coffeesCollection.updateOne(query, doc);
+      res.send(result);
+    });
 
-// DELETE coffee
-app.delete("/coffee/delete/:id", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const coffeesCollection = client.db("coffeelistDB").collection("coffees");
-    const result = await coffeesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete coffee" });
-  }
-});
+    app.delete("/coffee/delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await coffeesCollection.deleteOne(query);
+      res.send(result);
+    });
 
-// POST new user
-app.post("/newUser", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const usersCollection = client.db("coffeelistDB").collection("users");
-    const result = await usersCollection.insertOne(req.body);
-    res.json(result);
-    console.log("New User Added:", req.body);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to add user" });
-  }
-});
+    app.post("/coffees", async (req, res) => {
+      const coffee = req.body;
+      const result = await coffeesCollection.insertOne(coffee);
+      res.send(result);
+    });
 
-// GET all users
-app.get("/users", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const usersCollection = client.db("coffeelistDB").collection("users");
-    const result = await usersCollection.find().toArray();
-    res.json(result);
+    console.log("✅ MongoDB connected successfully!");
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch users" });
+    console.error("MongoDB connection error:", err);
   }
-});
-
-// DELETE user
-app.delete("/delete/user/:id", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const usersCollection = client.db("coffeelistDB").collection("users");
-    const result = await usersCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete user" });
-  }
-});
-
-// PATCH user login (update last sign-in)
-app.patch("/user/login", async (req, res) => {
-  try {
-    const client = await clientPromise;
-    const usersCollection = client.db("coffeelistDB").collection("users");
-    const userInfo = req.body;
-    const result = await usersCollection.updateOne(
-      { email: userInfo.email },
-      { $set: { userLastSignIn: userInfo.userLastSignIn } }
-    );
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update login" });
-  }
-});
-
-// Local development server (only when running directly)
-if (require.main === module) {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
 }
+run().catch(console.dir);
 
-// Export for Vercel
+// ❌ Remove app.listen
+// ✅ Export for Vercel
 module.exports = app;
-module.exports.default = serverless(app);
+module.exports.handler = serverless(app);
