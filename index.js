@@ -2,8 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { ObjectId } = require("mongodb");
-const serverless = require("serverless-http");
-const clientPromise = require("./lib/mongo"); // Fixed path
+const clientPromise = require("./lib/mongo");
 
 const app = express();
 app.use(cors());
@@ -150,6 +149,10 @@ app.patch("/user/login", async (req, res) => {
   }
 });
 
-// ------------------------ EXPORT FOR VERCEL ------------------------ //
+// For local development
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
 module.exports = app;
-module.exports.handler = serverless(app);
