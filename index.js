@@ -148,8 +148,8 @@ app.patch("/user/login", async (req, res) => {
   }
 });
 
-// Local development server
-if (process.env.NODE_ENV !== "production") {
+// Local development server (only when running directly)
+if (require.main === module) {
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
@@ -157,4 +157,5 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Export for Vercel
-module.exports = serverless(app);
+module.exports = app;
+module.exports.default = serverless(app);
