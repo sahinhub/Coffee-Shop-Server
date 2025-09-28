@@ -49,7 +49,39 @@ async function run() {
       res.send(result);
 
       console.log(newUser);
+    });
+
+
+    // get all users from the database
+    app.get('/users',async(req,res)=>{
+      const result = await usersCollection.find().toArray();
+      res.send(result);
     })
+
+
+    // user delete route
+    app.delete('/delete/user/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query={_id: new ObjectId(id)}
+      const result=await usersCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    // user login Route // last logged in time update
+    app.patch('/user/login',async(req,res)=>{
+      const userInfo=req.body;
+      const filter={email: (userInfo.email)}
+      const updatedInfo={
+        $set:{
+          userLastSignIn: userInfo.userLastSignIn
+        }
+      }
+      const result=await usersCollection.updateOne(filter,updatedInfo);
+      res.send(result);
+
+    })
+
+
     // coffee details route
     app.get("/coffee/:id", async (req, res) => {
       const id = req.params.id;
