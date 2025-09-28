@@ -2,7 +2,8 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { ObjectId } = require("mongodb");
-const clientPromise = require("./lib/mongo");
+const serverless = require("serverless-http");
+const clientPromise = require("../lib/mongo");
 
 const app = express();
 app.use(cors());
@@ -10,10 +11,8 @@ app.use(express.json());
 
 // default route
 app.get("/", (req, res) => {
-  res.send("Coffee shop server");
+  res.json({ message: "Coffee shop server is running!" });
 });
-
-// ------------------------ ROUTES ------------------------ //
 
 // GET all coffees
 app.get("/coffees", async (req, res) => {
@@ -21,10 +20,10 @@ app.get("/coffees", async (req, res) => {
     const client = await clientPromise;
     const coffeesCollection = client.db("coffeelistDB").collection("coffees");
     const result = await coffeesCollection.find().toArray();
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to fetch coffees" });
+    res.status(500).json({ error: "Failed to fetch coffees" });
   }
 });
 
@@ -34,10 +33,10 @@ app.get("/coffee/:id", async (req, res) => {
     const client = await clientPromise;
     const coffeesCollection = client.db("coffeelistDB").collection("coffees");
     const result = await coffeesCollection.findOne({ _id: new ObjectId(req.params.id) });
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to fetch coffee" });
+    res.status(500).json({ error: "Failed to fetch coffee" });
   }
 });
 
@@ -47,11 +46,11 @@ app.post("/coffees", async (req, res) => {
     const client = await clientPromise;
     const coffeesCollection = client.db("coffeelistDB").collection("coffees");
     const result = await coffeesCollection.insertOne(req.body);
-    res.send(result);
+    res.json(result);
     console.log("New Coffee Added:", req.body);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to add coffee" });
+    res.status(500).json({ error: "Failed to add coffee" });
   }
 });
 
@@ -72,10 +71,10 @@ app.put("/coffee/update/:id", async (req, res) => {
         },
       }
     );
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to update coffee" });
+    res.status(500).json({ error: "Failed to update coffee" });
   }
 });
 
@@ -85,10 +84,10 @@ app.delete("/coffee/delete/:id", async (req, res) => {
     const client = await clientPromise;
     const coffeesCollection = client.db("coffeelistDB").collection("coffees");
     const result = await coffeesCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to delete coffee" });
+    res.status(500).json({ error: "Failed to delete coffee" });
   }
 });
 
@@ -98,11 +97,11 @@ app.post("/newUser", async (req, res) => {
     const client = await clientPromise;
     const usersCollection = client.db("coffeelistDB").collection("users");
     const result = await usersCollection.insertOne(req.body);
-    res.send(result);
+    res.json(result);
     console.log("New User Added:", req.body);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to add user" });
+    res.status(500).json({ error: "Failed to add user" });
   }
 });
 
@@ -112,10 +111,10 @@ app.get("/users", async (req, res) => {
     const client = await clientPromise;
     const usersCollection = client.db("coffeelistDB").collection("users");
     const result = await usersCollection.find().toArray();
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to fetch users" });
+    res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
@@ -125,10 +124,10 @@ app.delete("/delete/user/:id", async (req, res) => {
     const client = await clientPromise;
     const usersCollection = client.db("coffeelistDB").collection("users");
     const result = await usersCollection.deleteOne({ _id: new ObjectId(req.params.id) });
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to delete user" });
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
 
@@ -142,17 +141,12 @@ app.patch("/user/login", async (req, res) => {
       { email: userInfo.email },
       { $set: { userLastSignIn: userInfo.userLastSignIn } }
     );
-    res.send(result);
+    res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to update login" });
+    res.status(500).json({ error: "Failed to update login" });
   }
 });
 
-// For local development
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
-
-module.exports = app;
+// Export for Vercel
+module.exports = serverless(app);
