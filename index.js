@@ -1,5 +1,4 @@
 const express = require("express");
-const serverless = require("serverless-http");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -115,4 +114,3 @@ run().catch(console.dir);
 // ❌ Remove app.listen
 // ✅ Export for Vercel
 module.exports = app;
-module.exports.handler = serverless(app);
