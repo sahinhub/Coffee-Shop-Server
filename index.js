@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const { ObjectId } = require("mongodb");
 const serverless = require("serverless-http");
-const clientPromise = require("./mongo"); // ensure the path is correct
+const clientPromise = require("./lib/mongo"); // Fixed path
 
 const app = express();
 app.use(cors());
