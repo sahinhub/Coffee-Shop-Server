@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const port =process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Coffee shop server");
 });
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@coffeelist.oikmndh.mongodb.net/?retryWrites=true&w=majority&appName=CoffeeList`;
 
@@ -45,6 +47,7 @@ async function run() {
     });
 
     app.get("/users", async (req, res) => {
+        console.log('users ');
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -111,6 +114,6 @@ async function run() {
 }
 run().catch(console.dir);
 
-// ❌ Remove app.listen
-// ✅ Export for Vercel
-module.exports = app;
+app.listen(port,()=>{
+    console.log('server is running on port ', port);
+})
